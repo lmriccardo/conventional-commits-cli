@@ -7,6 +7,7 @@ import "github.com/gdamore/tcell/v2"
 
 var (
 	SimpleStyle  = tcell.StyleDefault.Foreground(tcell.ColorWhite)
+	BorderStyle  = tcell.StyleDefault.Foreground(tcell.ColorDarkSlateGray)
 	TitleStyle   = tcell.StyleDefault.Foreground(tcell.ColorFloralWhite).Bold(true).Underline(true)
 	TextBoxTitle = tcell.StyleDefault.Foreground(tcell.ColorCadetBlue).Italic(true).Underline(true)
 )

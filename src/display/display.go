@@ -23,6 +23,8 @@ func InitializeScreen() tcell.Screen {
 
 	// Set the cursor style for the screen
 	screen.SetCursorStyle(tcell.CursorStyleBlinkingUnderline)
+	screen.HideCursor()
+	screen.EnableMouse()
 
 	return screen
 }

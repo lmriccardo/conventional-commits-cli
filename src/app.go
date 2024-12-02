@@ -3,7 +3,6 @@ package src
 import (
 	"example.com/ccommits/src/display"
 	"example.com/ccommits/src/objects"
-	"example.com/ccommits/src/styles"
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -17,6 +16,8 @@ type CCommitWindow struct {
 
 	cursor_x int // The x position of the cursor
 	cursor_y int // The y position of the cursor
+
+	prev_focus_obj objects.Object // Previously focused object
 }
 
 func CCommitWindow_new() *CCommitWindow {
@@ -41,23 +42,24 @@ func CCommitWindow_new() *CCommitWindow {
 	// Sets the cursor position
 	win.cursor_x = 0
 	win.cursor_y = 0
+	win.prev_focus_obj = nil
 
 	return win
 }
 
-func (win CCommitWindow) Display() {
+func (win *CCommitWindow) Display() {
 	// Display the title
 	display.DisplayTitle(win.screen, TITLE)
 
 	// Draw the text boxes
-	win.tb_desc1.Display(win.screen, styles.TextBoxTitle)
-	win.tb_desc2.Display(win.screen, styles.TextBoxTitle)
+	win.tb_desc1.Display(win.screen)
+	win.tb_desc2.Display(win.screen)
 
 	// Show the screen
 	win.screen.Show()
 }
 
-func (win CCommitWindow) getColliding(x, y int) objects.Object {
+func (win *CCommitWindow) getColliding(x, y int) objects.Object {
 	// Check if the colliding is for the main textbox
 	if win.tb_desc1.IsColliding(x, y) {
 		return win.tb_desc1
@@ -71,7 +73,7 @@ func (win CCommitWindow) getColliding(x, y int) objects.Object {
 	return nil
 }
 
-func (win CCommitWindow) Run() {
+func (win *CCommitWindow) Run() {
 	defer win.screen.Fini()
 
 	win.Display()
@@ -81,7 +83,7 @@ func (win CCommitWindow) Run() {
 		event := win.screen.PollEvent()
 		switch ev := event.(type) {
 		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
+			if ev.Key() == tcell.KeyCtrlC {
 				return
 			}
 
@@ -90,7 +92,34 @@ func (win CCommitWindow) Run() {
 				continue
 			}
 
-			obj.HandleEvent(win.screen, ev) // Handle the event
+			obj.HandleEventKey(win.screen, ev) // Handle the event
+			win.cursor_x, win.cursor_y = obj.GetCursorPosition()
+			win.screen.Sync()
+
+		case *tcell.EventMouse:
+			mouse_x, mouse_y := ev.Position()
+
+			// Check for actual mouse pressed
+			if !(ev.Buttons() == tcell.Button1 || ev.Buttons() == tcell.Button2) {
+				continue
+			}
+
+			obj := win.getColliding(mouse_x, mouse_y)
+			if obj == nil { // Check that the returned object is not null
+				continue
+			}
+
+			if win.prev_focus_obj != nil {
+				win.prev_focus_obj.SetFocus(false) // Unset the focus of previous object
+			}
+
+			obj.HandleEventMouse(win.screen, ev) // Handle the event
+			win.cursor_x, win.cursor_y = obj.GetCursorPosition()
+			win.screen.Sync()
+			win.prev_focus_obj = obj
+
+		case *tcell.EventResize:
+			win.screen.Sync()
 		}
 	}
 }
