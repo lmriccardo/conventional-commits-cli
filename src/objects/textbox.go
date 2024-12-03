@@ -54,58 +54,6 @@ func TextBox_new(title string, x, y, size_w, size_h int) *TextBox {
 		enters: make([]bool, 0), enter_idx: 0}
 }
 
-// Display the text box
-func (tb *TextBox) Display(screen tcell.Screen) {
-	tb.rec.DrawRectangle(screen) // Draw the rectangle for the text box
-
-	// Display the Title
-	display.DrawString(screen, tb.title, tb.rec.Start_x+3, tb.rec.Start_y, styles.TextBoxTitle)
-
-	// Display the content
-	display.DrawString(screen, tb.content, tb.start_pos_x, tb.start_pos_y, styles.SimpleStyle)
-}
-
-// Check if the textbox collides with input coordinates
-func (tb *TextBox) IsColliding(x, y int) bool {
-	y_diff := tb.start_pos_y - tb.rec.Start_y - 1
-	x_diff := tb.start_pos_x - tb.rec.Start_x - 1
-
-	return ((x >= tb.rec.Start_x+x_diff && x <= tb.rec.Start_x+tb.rec.Width-x_diff) &&
-		(y >= tb.rec.Start_y+y_diff && y <= tb.rec.Start_y+tb.rec.Height-y_diff))
-}
-
-func (tb *TextBox) SetFocus(value bool) {
-	tb.focus = value
-}
-
-// Returns the current cursor position relative to the object
-func (tb *TextBox) GetCursorPosition() (int, int) {
-	return tb.curr_pos_x, tb.curr_pos_y
-}
-
-func (tb *TextBox) SetCursorPosition(x, y int) {
-	tb.curr_pos_x = x
-	tb.curr_pos_y = y
-}
-
-func (tb *TextBox) CheckNextCursorPosition(next_x, next_y int) bool {
-	// Initialize the returns values as the current ones
-	return tb.IsColliding(next_x+1, next_y+1)
-}
-
-func (tb *TextBox) SetNextCursorPosition(x, y int) {
-	// Check if the input values lies inside the boundaries
-	result := tb.CheckNextCursorPosition(x, y)
-
-	// If the next cursor position is not permitted then return
-	if !result {
-		return
-	}
-
-	// Otherwise updates all the corresponding values
-	tb.SetCursorPosition(x, y)
-}
-
 func (tb *TextBox) getMaxRowSize() int {
 	return tb.rec.Width - 2*(tb.start_pos_x-tb.rec.Start_x)
 }
@@ -116,10 +64,6 @@ func (tb *TextBox) getStringPosition(x, y int) int {
 	rel_cursor_x := x - tb.start_pos_x                // Relative X cursor position
 	str_position := curr_line*row_size + rel_cursor_x // Position into the string
 	return str_position
-}
-
-func (tb *TextBox) getCurrentStringPosition() int {
-	return tb.getStringPosition(tb.curr_pos_x, tb.curr_pos_y)
 }
 
 // func (tb *TextBox) getLastYStringPosition() int {
@@ -311,6 +255,70 @@ func (tb *TextBox) handleArrowPressed(screen tcell.Screen, direction_x, directio
 	// Set the new cursor position
 	tb.SetNextCursorPosition(next_pos_x, next_pos_y)
 	screen.ShowCursor(tb.curr_pos_x, tb.curr_pos_y)
+}
+
+func (tb *TextBox) getCurrentStringPosition() int {
+	return tb.getStringPosition(tb.curr_pos_x, tb.curr_pos_y)
+}
+
+// Display the text box
+func (tb *TextBox) Display(screen tcell.Screen) {
+	tb.rec.DrawRectangle(screen) // Draw the rectangle for the text box
+
+	// Display the Title
+	display.DrawString(screen, tb.title, tb.rec.Start_x+3, tb.rec.Start_y, styles.TextBoxTitle)
+
+	// Display the content
+	display.DrawString(screen, tb.content, tb.start_pos_x, tb.start_pos_y, styles.SimpleStyle)
+}
+
+// Check if the textbox collides with input coordinates
+func (tb *TextBox) IsColliding(x, y int) bool {
+	y_diff := tb.start_pos_y - tb.rec.Start_y - 1
+	x_diff := tb.start_pos_x - tb.rec.Start_x - 1
+
+	return ((x >= tb.rec.Start_x+x_diff && x <= tb.rec.Start_x+tb.rec.Width-x_diff) &&
+		(y >= tb.rec.Start_y+y_diff && y <= tb.rec.Start_y+tb.rec.Height-y_diff))
+}
+
+func (tb *TextBox) SetFocus(value bool) {
+	tb.focus = value
+}
+
+func (tb *TextBox) HasFocus() bool {
+	return tb.focus
+}
+
+// Returns the current cursor position relative to the object
+func (tb *TextBox) GetCursorPosition() (int, int) {
+	return tb.curr_pos_x, tb.curr_pos_y
+}
+
+func (tb *TextBox) SetCursorPosition(x, y int) {
+	tb.curr_pos_x = x
+	tb.curr_pos_y = y
+}
+
+func (tb *TextBox) CheckNextCursorPosition(next_x, next_y int) bool {
+	// Initialize the returns values as the current ones
+	return tb.IsColliding(next_x+1, next_y+1)
+}
+
+func (tb *TextBox) SetNextCursorPosition(x, y int) {
+	// Check if the input values lies inside the boundaries
+	result := tb.CheckNextCursorPosition(x, y)
+
+	// If the next cursor position is not permitted then return
+	if !result {
+		return
+	}
+
+	// Otherwise updates all the corresponding values
+	tb.SetCursorPosition(x, y)
+}
+
+func (tb *TextBox) GetContent() string {
+	return tb.content
 }
 
 func (tb *TextBox) HandleEventKey(screen tcell.Screen, event *tcell.EventKey) {

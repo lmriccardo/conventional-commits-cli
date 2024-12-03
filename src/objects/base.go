@@ -6,10 +6,9 @@ type Object interface {
 	Display(tcell.Screen)
 	IsColliding(int, int) bool
 	SetFocus(bool)
+	HasFocus() bool
 	GetCursorPosition() (int, int)
-	SetCursorPosition(int, int)
-	CheckNextCursorPosition(int, int) bool
-	SetNextCursorPosition(int, int)
+	GetContent() string
 	HandleEventKey(tcell.Screen, *tcell.EventKey)
 	HandleEventMouse(tcell.Screen, *tcell.EventMouse)
 }

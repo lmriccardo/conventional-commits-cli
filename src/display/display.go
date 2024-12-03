@@ -2,9 +2,10 @@ package display
 
 import (
 	"log"
+	"strings"
 
-	"example.com/ccommits/src/styles"
 	"github.com/gdamore/tcell/v2"
+	"github.com/mattn/go-runewidth"
 )
 
 func InitializeScreen() tcell.Screen {
@@ -30,17 +31,26 @@ func InitializeScreen() tcell.Screen {
 }
 
 func DrawString(screen tcell.Screen, content string, start_x, start_y int, style tcell.Style) {
-	for i, char := range content {
-		screen.SetContent(start_x+i, start_y, char, nil, style)
+	prev_width := 0
+	for _, char := range content {
+		width := runewidth.RuneWidth(char)
+		screen.SetContent(start_x+prev_width, start_y, char, nil, style)
+		prev_width += width
 	}
 }
 
-func DisplayTitle(screen tcell.Screen, title string) {
-	width, _ := screen.Size()     // Get the width and the height of the screen
-	titlelen := len(title) / 2    // Get the length of the title
-	start_x := width/2 - titlelen // The starting position of the title
-	var start_y int = 3           // The starting y position of the title
+func CenterString(total_len int, content string) string {
+	if total_len <= 1 {
+		return content
+	}
 
-	// Draw the title
-	DrawString(screen, title, start_x, start_y, styles.TitleStyle)
+	// Compute the actual char dimension of the string
+	actual_dim := runewidth.StringWidth(content)
+
+	// Compute the padding at each side
+	left_padding := (total_len-1)/2 - actual_dim/2
+	right_padding := total_len - 2 - left_padding
+
+	// Build the string
+	return strings.Repeat(" ", left_padding) + content + strings.Repeat(" ", right_padding)
 }
