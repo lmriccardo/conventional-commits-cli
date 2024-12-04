@@ -1,8 +1,8 @@
 package objects
 
 import (
-	"example.com/ccommits/src/display"
-	"example.com/ccommits/src/styles"
+	"example.com/ccommits/ccommits/display"
+	"example.com/ccommits/ccommits/styles"
 	"github.com/gdamore/tcell/v2"
 )
 

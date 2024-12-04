@@ -1,13 +1,13 @@
-package src
+package ccommits
 
 import (
 	"fmt"
 	"strings"
 
-	"example.com/ccommits/src/display"
-	"example.com/ccommits/src/objects"
-	"example.com/ccommits/src/styles"
-	"example.com/ccommits/src/util"
+	"example.com/ccommits/ccommits/display"
+	"example.com/ccommits/ccommits/objects"
+	"example.com/ccommits/ccommits/styles"
+	"example.com/ccommits/ccommits/util"
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 )

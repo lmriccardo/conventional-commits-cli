@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"example.com/ccommits/src"
-	"example.com/ccommits/src/util"
+	"example.com/ccommits/ccommits"
+	"example.com/ccommits/ccommits/util"
 )
 
 func main() {
-	fmt.Println(src.TITLE)
-	fmt.Printf("Running Version: %s\n", src.VERSION)
+	fmt.Println(ccommits.TITLE)
+	fmt.Printf("Running Version: %s\n", ccommits.VERSION)
 	fmt.Println("GitHub Repository: https://github.com/lmriccardo/conventional-commits-cli.git")
 	fmt.Println()
 
@@ -67,7 +67,7 @@ func main() {
 	fmt.Println("\n[*] Running conventional commits cli app")
 	time.Sleep(time.Second)
 
-	app := src.CCommitWindow_new(gitinfo)
+	app := ccommits.CCommitWindow_new(gitinfo)
 	fmt_commit := app.Run()
 	if len(fmt_commit) < 1 {
 		fmt.Println("Invalid formatted conventional commit. Exiting ...")

@@ -1,4 +1,4 @@
-package src
+package ccommits
 
 var CHANGE_TYPE = map[string]string{
 	"FEAT":     "Adds or remove new feature",
