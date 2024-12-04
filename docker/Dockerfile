@@ -8,5 +8,8 @@ COPY . .
 RUN go build -o ccommits
 RUN mv ccommits/ccommits /usr/bin/
 
+# Sets the TERM environment to match requirements by ccommits
+ENV TERM=xterm-256color
+
 # Run the application
 CMD [ "ccommits" ]
