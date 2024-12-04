@@ -156,8 +156,32 @@ func GetGitInfo(rootpath string) *GitInfo {
 	// First of all, we need to chech that the current folder
 	// is a git repository, meaning the .git folder exists
 	git_dir := filepath.Join(rootpath, ".git")
-	if _, err := os.Stat(git_dir); os.IsNotExist(err) {
+	info, err := os.Stat(git_dir)
+	if os.IsNotExist(err) {
 		return nil
+	}
+
+	branch_dir := git_dir // We need to set also the directory where to take the branch
+
+	// In case of worktrees, we need to check whether the git_dir is actually
+	// a folder or a file linking to the real repository folder
+	if !info.IsDir() {
+		// Then we can read the content of the file and retrieve the actual folder
+		data, _ := os.ReadFile(git_dir)
+		data_str := string(data)
+		data_str = data_str[0 : len(data_str)-1]
+		parts := strings.Split(data_str, ": ")
+		branch_dir = parts[len(parts)-1] // Take the branch folder
+
+		// The master .git folder is located relatively to the current
+		// worktree branch folder at <curr_path>/<content-commondir>
+		// where commondir is a text file containing the relative path
+		// to the original git repository folder
+		tmp_path := filepath.Join(branch_dir, "commondir")
+		common_dir, _ := os.ReadFile(tmp_path)
+		common_dir_str := string(common_dir)
+		common_dir_str = common_dir_str[0 : len(common_dir_str)-1]
+		git_dir = strings.Join([]string{branch_dir, common_dir_str}, "/")
 	}
 
 	// Initialize the return value
@@ -180,7 +204,7 @@ func GetGitInfo(rootpath string) *GitInfo {
 	gitinfo.Branches = branches // Set all the branches name
 
 	// Get the current branch name
-	branch_name, err := getCurrentBranch(git_dir)
+	branch_name, err := getCurrentBranch(branch_dir)
 	if err != nil {
 		return nil
 	}
