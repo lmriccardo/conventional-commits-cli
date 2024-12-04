@@ -36,7 +36,7 @@ func main() {
 	fmt.Printf("DETECTED POSSIBLE REMOTES: \033[3m%s\033[0m\n",
 		strings.Join(gitinfo.Remotes, ", "))
 
-	if len(*remote_name) < 1 && len(gitinfo.Branches) > 1 {
+	if len(*remote_name) < 1 && len(gitinfo.Remotes) > 1 {
 		fmt.Print("\n[*] Please Choose a remote: ")
 		fmt.Scanln(&gitinfo.Curr_remote)
 	} else if len(*remote_name) > 1 {
