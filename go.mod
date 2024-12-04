@@ -1,4 +1,4 @@
-module example.com/ccommits
+module github.com/lmriccardo/conventional-commits-cli
 
 go 1.23.3
 

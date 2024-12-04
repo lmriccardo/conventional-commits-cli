@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"example.com/ccommits/ccommits/display"
-	"example.com/ccommits/ccommits/objects"
-	"example.com/ccommits/ccommits/styles"
-	"example.com/ccommits/ccommits/util"
 	"github.com/gdamore/tcell/v2"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/display"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/objects"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/styles"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/util"
 	"github.com/mattn/go-runewidth"
 )
 

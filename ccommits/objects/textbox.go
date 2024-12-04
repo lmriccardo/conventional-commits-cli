@@ -1,9 +1,9 @@
 package objects
 
 import (
-	"example.com/ccommits/ccommits/display"
-	"example.com/ccommits/ccommits/styles"
 	"github.com/gdamore/tcell/v2"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/display"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/styles"
 )
 
 type Point struct {

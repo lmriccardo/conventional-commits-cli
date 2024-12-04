@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"example.com/ccommits/ccommits"
-	"example.com/ccommits/ccommits/util"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits"
+	"github.com/lmriccardo/conventional-commits-cli/ccommits/util"
 )
 
 func main() {
@@ -26,6 +26,7 @@ func main() {
 
 	// Define the expected input command line argument
 	remote_name := flag.String("remote", "", "The chosen remote name")
+	yes_flag := flag.Bool("yes", false, "Skip all user input pauses when finalizing commit")
 	flag.Parse()
 
 	fmt.Printf("DETECTED REPOSITORY: \033[3m%s\033[0m\n", gitinfo.Reponame)
@@ -81,5 +82,5 @@ func main() {
 
 	fmt.Println("[*] Finalizing the Commit and Closing")
 	gitinfo.Commit_str = fmt_commit
-	gitinfo.FinalizeCommit()
+	gitinfo.FinalizeCommit(*yes_flag)
 }

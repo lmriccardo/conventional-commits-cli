@@ -222,7 +222,7 @@ func GetGitInfo(rootpath string) *GitInfo {
 	return gitinfo
 }
 
-func (gi *GitInfo) FinalizeCommit() {
+func (gi *GitInfo) FinalizeCommit(flag bool) {
 	// Print some useful informations
 	gitstatus := exec.Command("git", "status", "--porcelain")
 	var out bytes.Buffer
@@ -240,8 +240,13 @@ func (gi *GitInfo) FinalizeCommit() {
 	fmt.Printf("%s\n", status)
 	fmt.Println()
 	fmt.Println("[*] Previous changes needs to be staged before commiting.")
-	fmt.Println("[*] Running commands: <git add .> and <git commit -m ...> (Press ENTER to run, CTRL + C for exit)")
-	fmt.Scanln()
+
+	if !flag {
+		fmt.Println("[*] Running commands: <git add .> and <git commit -m ...> (Press ENTER to run, CTRL + C for exit)")
+		fmt.Scanln()
+	} else {
+		fmt.Println("[*] Running commands: <git add .> and <git commit -m ...>")
+	}
 
 	// Run Git add command
 	gitadd := exec.Command("git", "add", ".")
@@ -263,8 +268,12 @@ func (gi *GitInfo) FinalizeCommit() {
 		return
 	}
 
-	fmt.Println("\n[*] Pushing changes into remote. (Press ENTER to run, CTRL + C for exit)")
-	fmt.Scanln()
+	if !flag {
+		fmt.Println("\n[*] Pushing changes into remote. (Press ENTER to run, CTRL + C for exit)")
+		fmt.Scanln()
+	} else {
+		fmt.Println("\n[*] Pushing changes into remote.")
+	}
 
 	// Run git push
 	gitpush := exec.Command("git", "push", "--set-upstream", gi.Curr_remote, gi.Curr_branch)

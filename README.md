@@ -85,13 +85,13 @@ go get github.com/lmriccardo/conventional-commits-cli@<version>
 Up to now, the only possible version is `v0.1.0`. This will install a binary called `conventional-commits-cli` into the `$GOPATH/bin` folder, which is may be located at `$HOME/go/bin`. I suggest, first to rename the binary and then move it into `/usr/bin` if the `$GOPATH/bin` is not in your PATH. 
 
 ```
-ln -s $GOPATH/bin/conventional-commits-cli /usr/bin/ccommits-cli
+ln -s $GOPATH/bin/conventional-commits-cli /usr/bin/ccommits
 ```
 
 Finally, call the executable
 
 ```
-ccommits-cli [-remote=<remote-name>]
+ccommits [-remote=<remote-name>]
 ```
 
 It is also possible to download it from the _Releases_ page
