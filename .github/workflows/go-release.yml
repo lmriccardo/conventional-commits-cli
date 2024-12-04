@@ -1,0 +1,82 @@
+name: Release on tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-artifacts:
+    name: Building Artifacts on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+        exclude:
+          - os: window-latest
+            goos: linux
+          - os: ubuntu-latest
+            goos: windows
+          - os: macos-latest
+            goos: windows
+          - os: windows-latest
+            goos: darwin
+    
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23.3'
+      - run: go version
+
+      # Step 3: Build the binary
+      - name: Build binary
+        run: |
+          mkdir dist
+          go build -o dist/ccommits-${{ matrix.goos }}-${{ matrix.goarch }}
+        
+      # Step 4: Upload artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ccommits-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/ccommits-${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+
+  release:
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Download all build artifacts
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      # Step 3: Create a release
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+      
+      # Step 4: Upload assets to the release
+      - name: Upload Release Assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/*
+          tag: ${{ github.ref_name }}
