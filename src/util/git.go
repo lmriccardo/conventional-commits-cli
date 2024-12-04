@@ -1,7 +1,10 @@
 package util
 
 import (
+	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -9,8 +12,10 @@ import (
 type GitInfo struct {
 	Reponame    string   // The name of the current repository
 	Branches    []string // All the branches for the current repository
+	Remotes     []string // All remotes for the current repository
 	Curr_branch string   // The current branch name
 	Curr_remote string   // The remote for the current branch
+	Commit_str  string   // The commit message string
 }
 
 func extractRepoName(url string) string {
@@ -59,7 +64,7 @@ func getRepositoryName(gitdir string) (string, error) {
 }
 
 // Returns the name of all branches
-func getAllBranches(rootdir string) ([]string, error) {
+func getAllBranches(rootdir string, level int) ([]string, error) {
 	// This function recursively dive into folders to get the
 	// name of the file contained. Each file represents a branch
 	branches := make([]string, 0)
@@ -71,12 +76,21 @@ func getAllBranches(rootdir string) ([]string, error) {
 	// Loop for all the entries of the folder and recurse if necessary
 	for _, entry := range entries {
 		if !entry.IsDir() {
-			branches = append(branches, entry.Name())
+			branch_name := entry.Name()
+
+			if level >= 1 {
+				parts := strings.Split(rootdir, "/")
+				end_idx := len(parts)
+				suffix := strings.Join(parts[end_idx-level:], "/")
+				branch_name = suffix + "/" + branch_name
+			}
+
+			branches = append(branches, branch_name)
 			continue
 		}
 
 		new_root := filepath.Join(rootdir, entry.Name())
-		sub_branches, err := getAllBranches(new_root)
+		sub_branches, err := getAllBranches(new_root, level+1)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +114,42 @@ func getCurrentBranch(gitdir string) (string, error) {
 	// Usually there should be only one row (not too sure about that)
 	line := strings.Split(string(data), "\n")[0]
 	parts := strings.Split(line, "/")
-	return parts[len(parts)-1], nil
+
+	// Search the index of the "heads" string in the array of parts
+	head_idx := -1
+	for idx := range parts {
+		if strings.Contains(parts[idx], "heads") {
+			head_idx = idx
+			break
+		}
+	}
+
+	return strings.Join(parts[head_idx+1:], "/"), nil
+}
+
+func getAllRemotes(gitdir string) ([]string, error) {
+	config_file := filepath.Join(gitdir, "config")
+	data, err := os.ReadFile(config_file)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the config file to find the repository name.
+	// Usually, it is indicated into the remote url
+	lines := strings.Split(string(data), "\n")
+	remotes := make([]string, 0)
+	for _, line := range lines {
+		if !strings.HasPrefix(line, "[remote ") {
+			continue
+		}
+
+		start_idx := len("[remote ")
+		end_idx := len(line) - 1
+		remote := line[start_idx+1 : end_idx-1]
+		remotes = append(remotes, remote)
+	}
+
+	return remotes, nil
 }
 
 func GetGitInfo(rootpath string) *GitInfo {
@@ -123,7 +172,7 @@ func GetGitInfo(rootpath string) *GitInfo {
 	gitinfo.Reponame = repo_name // Set the repository name
 
 	// Get all the branches from the .git/refs/head/ folder
-	branches, err := getAllBranches(filepath.Join(git_dir, "refs", "heads"))
+	branches, err := getAllBranches(filepath.Join(git_dir, "refs", "heads"), 0)
 	if err != nil {
 		return nil
 	}
@@ -138,5 +187,68 @@ func GetGitInfo(rootpath string) *GitInfo {
 
 	gitinfo.Curr_branch = branch_name // Set the branch name
 
+	// Get all remotes
+	remotes, err := getAllRemotes(git_dir)
+	if err != nil {
+		return nil
+	}
+
+	gitinfo.Remotes = remotes // Set the remotes to the info structure
+
 	return gitinfo
+}
+
+func (gi *GitInfo) FinalizeCommit() {
+	// Print some useful informations
+	gitstatus := exec.Command("git", "status", "--porcelain")
+	var out bytes.Buffer
+	gitstatus.Stdout = &out
+	gitstatus.Run()
+
+	status := strings.TrimSpace(out.String())
+	if len(status) < 1 {
+		fmt.Println("[*] No changes to commit. Exiting ...")
+		os.Exit(1)
+	}
+
+	fmt.Println("[*] Showing the current status")
+	fmt.Println()
+	fmt.Printf("%s\n", status)
+	fmt.Println()
+	fmt.Println("[*] Previous changes needs to be staged before commiting.")
+	fmt.Println("[*] Running commands: <git add .> and <git commit -m ...> (Press ENTER to run, CTRL + C for exit)")
+	fmt.Scanln()
+
+	// Run Git add command
+	gitadd := exec.Command("git", "add", ".")
+	gitadd.Stderr = os.Stderr
+	gitadd.Stdout = os.Stdout
+	err := gitadd.Run()
+	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
+		return
+	}
+
+	// Run git commit
+	gitcommit := exec.Command("git", "commit", "-m", gi.Commit_str)
+	gitcommit.Stderr = os.Stderr
+	gitadd.Stdout = os.Stdout
+	err = gitcommit.Run()
+	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
+		return
+	}
+
+	fmt.Println("\n[*] Pushing changes into remote. (Press ENTER to run, CTRL + C for exit)")
+	fmt.Scanln()
+
+	// Run git push
+	gitpush := exec.Command("git", "push", "--set-upstream", gi.Curr_remote, gi.Curr_branch)
+	gitpush.Stderr = os.Stderr
+	gitpush.Stdout = os.Stdout
+	err = gitpush.Run()
+	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
+		return
+	}
 }

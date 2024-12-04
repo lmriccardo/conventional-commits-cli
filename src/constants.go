@@ -68,5 +68,6 @@ const LONG_DESC string = "4. Write a Longer Description"
 const VERSION string = "v0.1.0 - Riccardo La Marca"
 const REPO string = "📦"
 const BRANCH string = "🌲"
+const REMOTE string = "👾"
 
 const TITLE_Y int = 2

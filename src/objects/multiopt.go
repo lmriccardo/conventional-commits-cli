@@ -72,6 +72,7 @@ func (mob *MultiOptionBox) drawContent(screen tcell.Screen, start_line, end_line
 		}
 
 		str_content := mob.getStringContent(idx)
+		str_content = str_content[0:min(mob.getMaxRowSize(), len(str_content))]
 		start_y := mob.rec.Start_y + 2 + (idx - start_line)
 		display.DrawString(screen, str_content, start_x, start_y, style)
 	}
@@ -142,11 +143,15 @@ func (mob *MultiOptionBox) handleArrowPressed(screen tcell.Screen, direction int
 	prev_pos_x := mob.rec.Start_x + 2
 	prev_pos_y := mob.rec.Start_y + 2 + prev_curr_idx - mob.view*mob.getMaxNofLines()
 	prev_content := mob.getStringContent(prev_curr_idx)
+	end_content := min(mob.getMaxRowSize(), len(prev_content))
+	prev_content = prev_content[0:end_content]
 	display.DrawString(screen, prev_content, prev_pos_x, prev_pos_y, styles.SimpleStyle)
 
 	pos_x := mob.rec.Start_x + 2
 	pos_y := mob.rec.Start_y + 2 + mob.curr_idx - mob.view*mob.getMaxNofLines()
 	content := mob.getCurrentStringContent()
+	end_content = min(mob.getMaxRowSize(), len(content))
+	content = content[0:end_content]
 	display.DrawString(screen, content, pos_x, pos_y, styles.SelectStyle)
 }
 

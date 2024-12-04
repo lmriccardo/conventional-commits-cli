@@ -120,11 +120,13 @@ func (win *CCommitWindow) displayGitInfo() {
 	// Prepare the strings that needs to be displayed
 	repo_name := strings.Join([]string{REPO, win.gitinfo.Reponame}, " ")
 	branch_name := strings.Join([]string{BRANCH, win.gitinfo.Curr_branch}, " ")
+	remote_name := strings.Join([]string{REMOTE, win.gitinfo.Curr_remote}, " ")
 
 	// Compute the total length and respective starting x positions
 	repo_name_len := runewidth.StringWidth(repo_name)
 	branch_name_len := runewidth.StringWidth(branch_name)
-	tot_len := repo_name_len + branch_name_len + 4
+	remote_name_len := runewidth.StringWidth(remote_name)
+	tot_len := repo_name_len + branch_name_len + 4 + remote_name_len
 
 	// Display the repository name
 	repo_start_x := width/2 - tot_len/2
@@ -133,6 +135,10 @@ func (win *CCommitWindow) displayGitInfo() {
 	// Display the branch name
 	branch_start_x := repo_start_x + repo_name_len + 4
 	display.DrawString(win.screen, branch_name, branch_start_x, start_y, styles.GitInfoStyle)
+
+	// Display the branch name
+	remote_start_x := branch_start_x + branch_name_len + 4
+	display.DrawString(win.screen, remote_name, remote_start_x, start_y, styles.GitInfoStyle)
 }
 
 func (win *CCommitWindow) Display() {
