@@ -1,0 +1,107 @@
+name: Release on tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Create a release
+      - name: Create Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_COMMITS }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+  build-artifacts:
+    needs: [release]
+    name: Building for ${{ matrix.os }}:${{ matrix.goos }} and upload Assets to release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+        exclude:
+          - os: windows-latest
+            goos: linux
+          - os: ubuntu-latest
+            goos: windows
+          - os: ubuntu-latest
+            goos: darwin
+          - os: macos-latest
+            goos: windows
+          - os: macos-latest
+            goos: linux
+          - os: windows-latest
+            goos: darwin
+    
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23.3'
+
+      - name: Setting extension for Linux and MacOs
+        if: matrix.goos == 'linux' || matrix.goos == 'darwin'
+        run: |
+          ext=""
+          echo "ext=${ext}" >> $GITHUB_ENV
+
+      - name: Setting extension for Windows
+        if: matrix.goos == 'windows'
+        run: |
+          echo "ext=.exe" >> $env:GITHUB_ENV
+
+      # Step 3: Build the binary
+      - name: Build binary
+        run: |
+          mkdir dist
+          go build -o dist/ccommits-${{ matrix.goos }}-${{ matrix.goarch }}${{ env.ext }}
+        
+      # Step 4: Upload binary artifacts
+      - name: Uploading artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ccommits-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/ccommits-${{ matrix.goos }}-${{ matrix.goarch }}${{ env.ext }}
+          retention-days: 3
+
+      # Step 5: Download zip file
+      - name: Downloading artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ccommits-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ github.workspace }}/artifact
+        
+      # Step 6: Upload release asset to release
+      - name: Upload Release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_COMMITS }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/artifact/ccommits-${{ matrix.goos }}-${{ matrix.goarch }}${{ env.ext }}
+          asset_name: ccommits-${{ matrix.goos }}-${{ matrix.goarch }}-${{ github.ref_name }}${{ env.ext }}
+          asset_content_type: application/octet-stream
