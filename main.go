@@ -18,6 +18,49 @@ func main() {
 	fmt.Println()
 
 	cwd, _ := os.Getwd()
+
+	// Before getting git repository info it must check if the current environment
+	// is a docker container by using the defined heuristics
+	fmt.Println("------------------------- CONTAINER CHECKS ---------------------------------")
+	fmt.Print("[*] Is the current environment under a container? ")
+	is_container, container_id, _ := util.IsContainerEnvironment()
+	if !is_container {
+		fmt.Println("No")
+	} else {
+		fmt.Printf("Yes.\nDETECTED CONTAINER ID: %s\n", container_id)
+
+		// Check if the current working folder is mounted inside the container
+		fmt.Print("\n[*] Checking if the CWD is bind mounted: ")
+		fs_output := util.IsContainerFolderMounted(cwd)
+
+		if fs_output == nil {
+			fmt.Println("No")
+		} else {
+			fs_data := fs_output.Filesystems[0] // Select the only entry
+			fmt.Println("Yes")
+			fmt.Printf("   HOST SOURCE: %s\n", fs_data.Source)
+			fmt.Printf("   CONTAINER TARGET: %s\n", fs_data.Target)
+		}
+
+		// Get the ccommits target folder from the environment variable
+		fmt.Print("\n[*] Is the CCOMMITS_WD env variable set: ")
+		target_folder, _ := util.GetContainerEnvironmentVariable("CCOMMITS_WD")
+		if len(target_folder) < 1 {
+			// If the environment variable is not set, then ask the user
+			fmt.Println("No")
+			fmt.Print("[*] Enter the (relative) target folder (Leave blank for CWD): ")
+			fmt.Scanln(&target_folder)
+			if len(target_folder) < 1 {
+				target_folder = cwd // Set to the current working folder
+			}
+		}
+
+		fmt.Printf("SELECTED TARGET FOLDER: %s\n", target_folder)
+	}
+
+	fmt.Println("----------------------------------------------------------------------------")
+	fmt.Println("------------------------- GIT REPOSITORY GATHERING -------------------------")
+
 	gitinfo := util.GetGitInfo(cwd)
 	if gitinfo == nil {
 		fmt.Println("Current folder does not belong to a repository. Exiting ...")
@@ -65,6 +108,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println("----------------------------------------------------------------------------")
+
 	fmt.Println("\n[*] Running conventional commits cli app")
 	time.Sleep(time.Second)
 
@@ -80,7 +125,11 @@ func main() {
 	fmt.Printf("%s\n\n", fmt_commit)
 	fmt.Println()
 
+	fmt.Println("------------------------- FINALIZING THE COMMIT ----------------------------")
+
 	fmt.Println("[*] Finalizing the Commit and Closing")
 	gitinfo.Commit_str = fmt_commit
 	gitinfo.FinalizeCommit(*yes_flag)
+
+	fmt.Println("----------------------------------------------------------------------------")
 }
