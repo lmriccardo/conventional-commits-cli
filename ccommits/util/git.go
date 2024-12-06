@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const separator string = string(os.PathSeparator)
+
 type GitInfo struct {
 	Reponame    string   // The name of the current repository
 	Branches    []string // All the branches for the current repository
@@ -79,10 +81,10 @@ func getAllBranches(rootdir string, level int) ([]string, error) {
 			branch_name := entry.Name()
 
 			if level >= 1 {
-				parts := strings.Split(rootdir, "/")
+				parts := strings.Split(rootdir, separator)
 				end_idx := len(parts)
-				suffix := strings.Join(parts[end_idx-level:], "/")
-				branch_name = suffix + "/" + branch_name
+				suffix := strings.Join(parts[end_idx-level:], separator)
+				branch_name = suffix + separator + branch_name
 			}
 
 			branches = append(branches, branch_name)
@@ -181,7 +183,7 @@ func GetGitInfo(rootpath string) *GitInfo {
 		common_dir, _ := os.ReadFile(tmp_path)
 		common_dir_str := string(common_dir)
 		common_dir_str = common_dir_str[0 : len(common_dir_str)-1]
-		git_dir = strings.Join([]string{branch_dir, common_dir_str}, "/")
+		git_dir = strings.Join([]string{branch_dir, common_dir_str}, separator)
 	}
 
 	// Initialize the return value

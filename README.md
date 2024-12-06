@@ -72,17 +72,21 @@ Given the previous listed bugs, there are some tips that I can give you:
 
 Installation is not required if using Docker containers.
 
-```
-docker run -it -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:latest
+``` Bash
+# For Linux and MacOs
+docker run -it --rm -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:latest
+
+# For Windows
+docker run -it --rm -v .\:/app -w /app/ lmriccardo/ccommits-cli:latest
 ```
 
 On the other hand it is possible to install it locally using _go_
 
-```
-go get github.com/lmriccardo/conventional-commits-cli@<version>
+```Bash
+go install github.com/lmriccardo/conventional-commits-cli@<version>
 ```
 
-Up to now, the only possible version is `v0.1.0`. This will install a binary called `conventional-commits-cli` into the `$GOPATH/bin` folder, which is may be located at `$HOME/go/bin`. I suggest, first to rename the binary and then move it into `/usr/bin` if the `$GOPATH/bin` is not in your PATH. 
+This will install a binary called `conventional-commits-cli` into the `$GOPATH/bin` folder, which is may be located at `$HOME/go/bin`. I suggest, first to rename the binary and then move it into `/usr/bin` if the `$GOPATH/bin` is not in your PATH. 
 
 ```
 ln -s $GOPATH/bin/conventional-commits-cli /usr/bin/ccommits
@@ -91,10 +95,31 @@ ln -s $GOPATH/bin/conventional-commits-cli /usr/bin/ccommits
 Finally, call the executable
 
 ```
-ccommits [-remote=<remote-name>]
+ccommits [-remote=<remote-name>] [-yes]
+
+Commands:
+    -remote=<remote-name> : Select the given remote instead of automatic detection
+    -yes : skips all pauses waiting for user input (ENTER or CTRL+C)
 ```
 
-It is also possible to download it from the _Releases_ page
+It is also possible to download the binary from the _Releases_ page
+
+## ▶ For Developer
+
+In case you would like to contribute to this project, the docker image comes with the required tools to run, build and debug a go application.
+
+The usual setup workflow, without installing go locally, is the following (Linux, Windows should be the same):
+
+```bash
+# Starts the docker container overwriting the entrypoint
+# This will starts the container in interactive mode with a shell
+# located in the chosen working folder. A shell is required to compile
+docker run -it -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:latest /bin/bash
+```
+
+Open VS Code (assuming you are using it), on Remote Connection chose "Attach to a Running Container". Look for the container that is running _ccommits-cli:latest_ and start coding!
+Attaching to the running container is useful for debugging purposes, but it is not strictly required since the current workspace is bind mounted into the container.
+In any case, running and building must be done using the shell. 
 
 ## ▶ Conclusion
 
