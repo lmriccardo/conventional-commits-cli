@@ -38,4 +38,4 @@ jobs:
       # Verify the pushed image (Optional)
       - name: Verify image
         run: |
-          docker pull your-docker-hub-username/your-repository-name:latest
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/ccommits-cli:latest
