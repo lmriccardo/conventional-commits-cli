@@ -319,8 +319,6 @@ func GetGitRepositoryInformation(remote_name, tgfolder, srcfolder, entrypath str
 	cwd, _ := os.Getwd()
 	if strings.Compare(cwd, gitinfo.TargetPath) != 0 {
 		os.Chdir(gitinfo.TargetPath)
-		cwd, _ = os.Getwd()
-		fmt.Println(cwd)
 	}
 
 	// Check for changes to be committed
@@ -388,6 +386,6 @@ func (gi *GitInfo) RestorePreviousContent() {
 	// Restore the previous state of the .git file (if necessary)
 	if len(gi.PrevContent) > 0 {
 		file, _ := os.OpenFile(gi.GitDir, os.O_WRONLY, 0644)
-		file.WriteString(gi.PrevContent)
+		file.WriteString(gi.PrevContent + "\n")
 	}
 }

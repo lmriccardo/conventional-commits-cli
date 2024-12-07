@@ -70,7 +70,18 @@ Given the previous listed bugs, there are some tips that I can give you:
 
 ## ▶ Installation and Usage
 
-Installation is not required if using Docker containers.
+Installation is not required if using Docker containers. However, it is required to distinguish between two situations:
+
+- The current working folder is also the root folder of the repository
+- The current working folder is behind a Git worktree
+
+The main difference is about the `.git` file, while in the first case it is a folder, in the last one it is a file containing a link to the repository root folder. When bind mounting the current folder into the container, the link specified in the `.git` file is no longer valid.
+
+Notice, also, that when running inside a docker container SSH authentication might not be available. A possible solution could be bind mounting the .ssh folder conataining the private and public keys into the container as well.
+
+### No Git worktree
+
+In the first case we can bind mount the working folder
 
 ``` Bash
 # For Linux and MacOs
@@ -79,6 +90,29 @@ docker run -it --rm -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:latest
 # For Windows
 docker run -it --rm -v .\:/app -w /app/ lmriccardo/ccommits-cli:latest
 ```
+
+### CWD is inside a Git worktree
+
+In this case the user should bind mount the root folder of the git worktree. For example assuming the current folder setup
+
+```
+rootFolder/
+|-master/
+|--.git/
+|-branch1/
+|--.git
+```
+
+Then the command required to run the docker container is
+
+```bash
+# pwd = rootFolder
+docker run -it --rm --env CCOMMITS_WD=<target1> -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:latest
+```
+
+The environment variable `CCOMMITS_WD` is used to take the target branch on which committing changes. The presence of the environment variable is optional, when running the docker container, however a prompt will be shown to the user asking for the target folder.
+
+### Docker is not available
 
 On the other hand it is possible to install it locally using _go_
 
@@ -114,12 +148,14 @@ The usual setup workflow, without installing go locally, is the following (Linux
 # Starts the docker container overwriting the entrypoint
 # This will starts the container in interactive mode with a shell
 # located in the chosen working folder. A shell is required to compile
-docker run -it -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:latest /bin/bash
+docker run -it -v $(pwd):/app -w /app/ lmriccardo/ccommits-cli:dev /bin/bash
 ```
 
 Open VS Code (assuming you are using it), on Remote Connection chose "Attach to a Running Container". Look for the container that is running _ccommits-cli:latest_ and start coding!
 Attaching to the running container is useful for debugging purposes, but it is not strictly required since the current workspace is bind mounted into the container.
 In any case, running and building must be done using the shell. 
+
+In the last update, only for VS Code, a `.devcontainer` folder has been created.
 
 ## ▶ Conclusion
 

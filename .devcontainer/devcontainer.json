@@ -1,0 +1,16 @@
+{
+    "name": "CCommits Development Env",
+    "build" : {
+        "dockerfile": "../docker/Dockerfile.dev",
+        "context": "../"
+    },
+    "runArgs": ["--privileged", "--cap-add=all"],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash"
+            },
+            "extensions": ["golang.go"]
+        }
+    }
+}

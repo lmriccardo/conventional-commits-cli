@@ -170,9 +170,11 @@ func PerformContainerChecks(cwd string) (string, string, string) {
 			if len(target_folder) < 1 {
 				target_folder = cwd // Set to the current working folder
 			} else {
+				fmt.Println("Yes")
 				target_folder = filepath.Join(cwd, target_folder) // Construct the path
 			}
 		} else {
+			fmt.Println("Yes")
 			target_folder = filepath.Join(cwd, target_folder)
 		}
 
