@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -116,4 +117,69 @@ func IsContainerFolderMounted(folder string) *FindmntOutput {
 	}
 
 	return output
+}
+
+// Performs all the containers checks and returns the target folder
+func PerformContainerChecks(cwd string) (string, string, string) {
+	fmt.Println("------------------------- CONTAINER CHECKS ---------------------------------")
+
+	// First we need to check if the current running environment is a docker
+	// container or not. If it is then more diagnostic is necessary, otherwise
+	// we can just returns the current working folder
+	fmt.Print("[*] Is the current environment under a container? ")
+	is_container, container_id, _ := IsContainerEnvironment()
+	target_folder := cwd
+	source_folder := cwd
+	entry_path := cwd
+
+	if !is_container {
+		fmt.Println("No")
+	} else {
+		fmt.Printf("Yes.\nDETECTED CONTAINER ID: %s\n", container_id)
+
+		// Check if the current working folder is mounted inside the container.
+		// This checks gives also a mapping from the current working folder
+		// to the host working folder, which is likely to be written into the
+		// .git file if the target is inside git worktree
+		fmt.Print("\n[*] Checking if the CWD is bind mounted: ")
+		fs_output := IsContainerFolderMounted(cwd)
+
+		var fs_data *Filesystem = nil
+		if fs_output == nil {
+			fmt.Println("No")
+		} else {
+			fs_data = &fs_output.Filesystems[0] // Select the only entry
+			fmt.Println("Yes")
+			fmt.Printf("   HOST SOURCE: %s\n", fs_data.Source)
+			fmt.Printf("   CONTAINER TARGET: %s\n", fs_data.Target)
+			parts := strings.Split(fs_data.Source, "[")
+			source_folder = strings.TrimSuffix(parts[1], "]")
+			entry_path = fs_data.Target
+		}
+
+		// Get the ccommits target folder from the environment variable.
+		// According to the ccommits documentation, user can specify
+		// the target folder using an env variable named CCOMMITS_WD
+		fmt.Print("\n[*] Is the CCOMMITS_WD env variable set: ")
+		target_folder, _ = GetContainerEnvironmentVariable("CCOMMITS_WD")
+		if len(target_folder) < 1 {
+			// If the environment variable is not set, then ask the user
+			fmt.Println("No")
+			fmt.Print("[*] Enter the (relative) target folder (Leave blank for CWD): ")
+			fmt.Scanln(&target_folder)
+			if len(target_folder) < 1 {
+				target_folder = cwd // Set to the current working folder
+			} else {
+				target_folder = filepath.Join(cwd, target_folder) // Construct the path
+			}
+		} else {
+			target_folder = filepath.Join(cwd, target_folder)
+		}
+
+		fmt.Printf("SELECTED TARGET FOLDER: %s\n", target_folder)
+	}
+
+	fmt.Println("----------------------------------------------------------------------------")
+
+	return target_folder, source_folder, entry_path
 }

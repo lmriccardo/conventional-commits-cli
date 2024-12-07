@@ -12,6 +12,9 @@ RUN mv ccommits/conventional-commits-cli /usr/bin/
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 RUN dlv version
 
+# Installing vim
+RUN apt update && apt install -y vim
+
 # Sets the TERM environment to match requirements by ccommits
 ENV TERM=xterm-256color
 
