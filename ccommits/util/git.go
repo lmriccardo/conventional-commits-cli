@@ -18,6 +18,9 @@ type GitInfo struct {
 	Curr_branch string   // The current branch name
 	Curr_remote string   // The remote for the current branch
 	Commit_str  string   // The commit message string
+	PrevContent string   // The previous content of the .git file (only for worktrees)
+	GitDir      string   // The root folder of git
+	TargetPath  string   // The target path of all git commands
 }
 
 func extractRepoName(url string) string {
@@ -154,7 +157,12 @@ func getAllRemotes(gitdir string) ([]string, error) {
 	return remotes, nil
 }
 
-func GetGitInfo(rootpath string) *GitInfo {
+func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
+	// Initialize the return value
+	gitinfo := new(GitInfo)
+	gitinfo.PrevContent = ""
+	gitinfo.TargetPath = rootpath
+
 	// First of all, we need to chech that the current folder
 	// is a git repository, meaning the .git folder exists
 	git_dir := filepath.Join(rootpath, ".git")
@@ -163,7 +171,8 @@ func GetGitInfo(rootpath string) *GitInfo {
 		return nil
 	}
 
-	branch_dir := git_dir // We need to set also the directory where to take the branch
+	gitinfo.GitDir = git_dir // Set the git folder inside the structure
+	branch_dir := git_dir    // We need to set also the directory where to take the branch
 
 	// In case of worktrees, we need to check whether the git_dir is actually
 	// a folder or a file linking to the real repository folder
@@ -175,6 +184,28 @@ func GetGitInfo(rootpath string) *GitInfo {
 		parts := strings.Split(data_str, ": ")
 		branch_dir = parts[len(parts)-1] // Take the branch folder
 
+		// If the entry path of the container, meaning the one the user have
+		// previously bind mounted and set as working folder is different
+		// from the source folder, i.e., the path of the mount in the host
+		// filesystem, we need to change the absolute path to the branch folder.
+		// Moreover, it is necessary to change the content of the .git file otherwise
+		// git will not able to work properly.
+		if strings.Compare(srcpath, entrypath) != 0 {
+			parts = strings.Split(branch_dir, srcpath)
+			branch_dir = filepath.Join(entrypath, parts[1])
+
+			// Open the .git file in write mode
+			file, _ := os.OpenFile(git_dir, os.O_TRUNC|os.O_WRONLY, 0644)
+			gitinfo.PrevContent = data_str
+			newcontent := fmt.Sprintf("gitdir: %s\n", branch_dir)
+			file.WriteString(newcontent)
+			config_cmd := exec.Command("git", "config", "--global", "--add", "safe.directory", rootpath)
+			err = config_cmd.Run()
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+
 		// The master .git folder is located relatively to the current
 		// worktree branch folder at <curr_path>/<content-commondir>
 		// where commondir is a text file containing the relative path
@@ -185,9 +216,6 @@ func GetGitInfo(rootpath string) *GitInfo {
 		common_dir_str = common_dir_str[0 : len(common_dir_str)-1]
 		git_dir = strings.Join([]string{branch_dir, common_dir_str}, separator)
 	}
-
-	// Initialize the return value
-	gitinfo := new(GitInfo)
 
 	// Get the repository name
 	repo_name, err := getRepositoryName(git_dir)
@@ -224,8 +252,9 @@ func GetGitInfo(rootpath string) *GitInfo {
 	return gitinfo
 }
 
-func (gi *GitInfo) FinalizeCommit(flag bool) {
-	// Print some useful informations
+func checkChangesToCommit(gi *GitInfo) {
+	// Get the status of the current branch. We need to check if there
+	// are changes that needs to be committed
 	gitstatus := exec.Command("git", "status", "--porcelain")
 	var out bytes.Buffer
 	gitstatus.Stdout = &out
@@ -234,6 +263,7 @@ func (gi *GitInfo) FinalizeCommit(flag bool) {
 	status := strings.TrimSpace(out.String())
 	if len(status) < 1 {
 		fmt.Println("[*] No changes to commit. Exiting ...")
+		gi.RestorePreviousContent()
 		os.Exit(1)
 	}
 
@@ -241,6 +271,65 @@ func (gi *GitInfo) FinalizeCommit(flag bool) {
 	fmt.Println()
 	fmt.Printf("%s\n", status)
 	fmt.Println()
+}
+
+func GetGitRepositoryInformation(remote_name, tgfolder, srcfolder, entrypath string) *GitInfo {
+	fmt.Println("------------------------- GIT REPOSITORY GATHERING -------------------------")
+
+	gitinfo := getGitInfo(tgfolder, srcfolder, entrypath)
+	if gitinfo == nil {
+		fmt.Println("Current folder does not belong to a repository. Exiting ...")
+		os.Exit(1)
+	}
+
+	fmt.Printf("DETECTED REPOSITORY: \033[3m%s\033[0m\n", gitinfo.Reponame)
+	fmt.Printf("DETECTED CURRENT BRANCH: \033[3m%s\033[0m\n", gitinfo.Curr_branch)
+	fmt.Printf("DETECTED REPOSITORY BRANCHES: \033[3m%s\033[0m\n", strings.Join(gitinfo.Branches, ", "))
+	fmt.Printf("DETECTED POSSIBLE REMOTES: \033[3m%s\033[0m\n", strings.Join(gitinfo.Remotes, ", "))
+
+	if len(remote_name) < 1 && len(gitinfo.Remotes) > 1 {
+		fmt.Print("\n[*] Please Choose a remote: ")
+		fmt.Scanln(&gitinfo.Curr_remote)
+	} else if len(remote_name) > 1 {
+		gitinfo.Curr_remote = remote_name
+	} else if len(gitinfo.Remotes) == 1 {
+		gitinfo.Curr_remote = gitinfo.Remotes[0]
+	}
+
+	// Check that at least a name has been given
+	if len(gitinfo.Curr_remote) < 1 {
+		fmt.Println("A remote name must be choosen. Exiting ...")
+		os.Exit(1)
+	}
+
+	// Check that the remote name is inside the list of all remotes
+	result := false
+	for _, remote := range gitinfo.Remotes {
+		if strings.Compare(gitinfo.Curr_remote, remote) == 0 {
+			result = true
+		}
+	}
+
+	if !result {
+		fmt.Println("A valid remote name must be given. Exiting ...")
+		os.Exit(1)
+	}
+
+	// We need to change the cwd to the target path
+	cwd, _ := os.Getwd()
+	if strings.Compare(cwd, gitinfo.TargetPath) != 0 {
+		os.Chdir(gitinfo.TargetPath)
+	}
+
+	// Check for changes to be committed
+	checkChangesToCommit(gitinfo)
+
+	fmt.Println("----------------------------------------------------------------------------")
+
+	return gitinfo
+}
+
+func (gi *GitInfo) FinalizeCommit(flag bool) {
 	fmt.Println("[*] Previous changes needs to be staged before commiting.")
 
 	if !flag {
@@ -257,6 +346,7 @@ func (gi *GitInfo) FinalizeCommit(flag bool) {
 	err := gitadd.Run()
 	if err != nil {
 		fmt.Printf("An Error occurred: %s\n", err)
+		gi.RestorePreviousContent()
 		return
 	}
 
@@ -267,6 +357,7 @@ func (gi *GitInfo) FinalizeCommit(flag bool) {
 	err = gitcommit.Run()
 	if err != nil {
 		fmt.Printf("An Error occurred: %s\n", err)
+		gi.RestorePreviousContent()
 		return
 	}
 
@@ -284,6 +375,17 @@ func (gi *GitInfo) FinalizeCommit(flag bool) {
 	err = gitpush.Run()
 	if err != nil {
 		fmt.Printf("An Error occurred: %s\n", err)
+		gi.RestorePreviousContent()
 		return
+	}
+
+	gi.RestorePreviousContent()
+}
+
+func (gi *GitInfo) RestorePreviousContent() {
+	// Restore the previous state of the .git file (if necessary)
+	if len(gi.PrevContent) > 0 {
+		file, _ := os.OpenFile(gi.GitDir, os.O_WRONLY, 0644)
+		file.WriteString(gi.PrevContent + "\n")
 	}
 }
