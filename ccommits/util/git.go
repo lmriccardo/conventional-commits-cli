@@ -21,6 +21,7 @@ type GitInfo struct {
 	PrevContent string   // The previous content of the .git file (only for worktrees)
 	GitDir      string   // The root folder of git
 	TargetPath  string   // The target path of all git commands
+	User        string   // The user specified in the config file
 }
 
 func extractRepoName(url string) string {
@@ -202,12 +203,6 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 			file.WriteString(newcontent)
 		}
 
-		config_cmd := exec.Command("git", "config", "--add", "safe.directory", rootpath)
-		err = config_cmd.Run()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
 		// The master .git folder is located relatively to the current
 		// worktree branch folder at <curr_path>/<content-commondir>
 		// where commondir is a text file containing the relative path
@@ -217,6 +212,16 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 		common_dir_str := string(common_dir)
 		common_dir_str = common_dir_str[0 : len(common_dir_str)-1]
 		git_dir = strings.Join([]string{branch_dir, common_dir_str}, separator)
+	}
+
+	fmt.Println("Runnig command")
+	config_cmd := exec.Command("git", "config", "--global", "--add", "safe.directory", rootpath)
+	config_cmd.Stdout = os.Stdout
+	config_cmd.Stderr = os.Stderr
+
+	err = config_cmd.Run()
+	if err != nil {
+		fmt.Println(err.Error())
 	}
 
 	// Get the repository name
