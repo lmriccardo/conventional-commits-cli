@@ -168,6 +168,7 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 	git_dir := filepath.Join(rootpath, ".git")
 	info, err := os.Stat(git_dir)
 	if os.IsNotExist(err) {
+		fmt.Printf("An Error occurred: %s\n", err)
 		return nil
 	}
 
@@ -199,11 +200,12 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 			gitinfo.PrevContent = data_str
 			newcontent := fmt.Sprintf("gitdir: %s\n", branch_dir)
 			file.WriteString(newcontent)
-			config_cmd := exec.Command("git", "config", "--global", "--add", "safe.directory", rootpath)
-			err = config_cmd.Run()
-			if err != nil {
-				fmt.Println(err.Error())
-			}
+		}
+
+		config_cmd := exec.Command("git", "config", "--add", "safe.directory", rootpath)
+		err = config_cmd.Run()
+		if err != nil {
+			fmt.Println(err.Error())
 		}
 
 		// The master .git folder is located relatively to the current
@@ -220,6 +222,7 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 	// Get the repository name
 	repo_name, err := getRepositoryName(git_dir)
 	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
 		return nil
 	}
 
@@ -228,6 +231,7 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 	// Get all the branches from the .git/refs/head/ folder
 	branches, err := getAllBranches(filepath.Join(git_dir, "refs", "heads"), 0)
 	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
 		return nil
 	}
 
@@ -236,6 +240,7 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 	// Get the current branch name
 	branch_name, err := getCurrentBranch(branch_dir)
 	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
 		return nil
 	}
 
@@ -244,6 +249,7 @@ func getGitInfo(rootpath, srcpath, entrypath string) *GitInfo {
 	// Get all remotes
 	remotes, err := getAllRemotes(git_dir)
 	if err != nil {
+		fmt.Printf("An Error occurred: %s\n", err)
 		return nil
 	}
 
