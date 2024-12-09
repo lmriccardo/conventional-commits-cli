@@ -112,6 +112,18 @@ docker run -it --rm --env CCOMMITS_WD=<target1> -v $(pwd):/app -w /app/ lmriccar
 
 The environment variable `CCOMMITS_WD` is used to take the target branch on which committing changes. The presence of the environment variable is optional, when running the docker container, however a prompt will be shown to the user asking for the target folder.
 
+### Docker container and Git SSH authentication
+
+In case you are authenticating git remote operations using SSH authentication (Pub and Priv Keys), notice that by running above commands it will not works, since the required files are missing inside the container. In order to make it working, the following command should be used instead:
+
+```bash
+docker run -it -v <path/to/.ssh>:/root/.ssh \
+               -v $(pwd):/app/ \
+               -w /app/ lmriccardo/ccommits-cli:latest
+``` 
+
+Obviously, the same holds for worktrees. In this last case the `--env CCOMMITS_WD` can be given.
+
 ### Docker is not available
 
 On the other hand it is possible to install it locally using _go_
