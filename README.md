@@ -52,10 +52,6 @@ If you would like to use the second way for moving between the boxes, remember t
 
 The *Textbox* development is still in early stage development and provides just the required features to write a commit message. There are some bugs that needs to be fixed and improvemenets to be coded. Here is the list of some bugs:
 
-- When the cursor is not at the end of the string, meaning that has been moved elsewhere inside the content, then writing new characters will delete what's next, essentially writing in *Insertion* mode by default.
-
-- With the same condition of the previous bug, when deleting characters at some point gives *Index Out Of Bound Error*.
-
 - When the window is resized its previous content will not be synched
 
 - The ENTER Key not working in Textbox (I have decided to disable it for the moment and get back to it after the first release)
