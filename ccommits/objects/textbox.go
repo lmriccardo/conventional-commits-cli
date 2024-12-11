@@ -6,11 +6,6 @@ import (
 	"github.com/lmriccardo/conventional-commits-cli/ccommits/styles"
 )
 
-type Vec2 struct {
-	X int // X Position
-	Y int // Y Position
-}
-
 // Mapping event keys arrow to direction (x, y)
 var ARROW_MAPPING map[tcell.Key]Vec2 = map[tcell.Key]Vec2{
 	tcell.KeyUp:    {0, -1},
